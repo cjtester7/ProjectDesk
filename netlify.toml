@@ -1,0 +1,4 @@
+[[redirects]]
+  from = "/"
+  to = "/index-v7.html"
+  status = 200
