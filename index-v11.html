@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ProjectDesk v11 — Project Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ═══════════════════════════════════════════════
+   TOKENS & RESET
+═══════════════════════════════════════════════ */
+:root {
+  --bg:         #0d0f14;
+  --surface:    #141720;
+  --surface2:   #1c2030;
+  --surface3:   #242840;
+  --border:     #2a2e42;
+  --border2:    #353a55;
+  --text:       #d4d8f0;
+  --text2:      #7f86a8;
+  --text3:      #4a506e;
+  --accent:     #4f8ef7;
+  --accent2:    #2d5fb8;
+  --green:      #3ecf8e;
+  --amber:      #f5a623;
+  --red:        #e05c5c;
+  --purple:     #9b72f5;
+  --mono:       'IBM Plex Mono', monospace;
+  --sans:       'IBM Plex Sans', sans-serif;
+  --radius:     6px;
+  --radius2:    10px;
+  --shadow:     0 2px 12px rgba(0,0,0,0.45);
+  --shadow2:    0 4px 24px rgba(0,0,0,0.6);
+  --transition: 0.18s ease;
+  --sidebar-w:  280px;
+}
+/* ═══════════════════════════════════════════════
+   LIGHT THEME OVERRIDES
+═══════════════════════════════════════════════ */
+[data-theme="light"] {
+  --bg:         #f0f2f8;
+  --surface:    #ffffff;
+  --surface2:   #f5f7fc;
+  --surface3:   #e8ecf5;
+  --border:     #d4d9ec;
+  --border2:    #bcc3dc;
+  --text:       #1a1e30;
+  --text2:      #4a5278;
+  --text3:      #8890b0;
+  --accent:     #3478e8;
+  --accent2:    #1d5cc4;
+  --green:      #1f9e68;
+  --amber:      #c47d0a;
+  --red:        #c43a3a;
+  --purple:     #7048d4;
+  --shadow:     0 2px 12px rgba(0,0,0,0.10);
+  --shadow2:    0 4px 24px rgba(0,0,0,0.18);
+}
+
+/* Smooth theme transitions */
+body, #sidebar, #main, #topbar, #footer,
+.modal, .proj-item, .proj-card, .table-wrap,
+.data-table th, .data-table td, input, textarea, select,
+.btn, .tab-btn, .filter-btn, #project-detail,
+.detail-description, .status-badge {
+  transition: background-color 0.25s ease, color 0.25s ease,
+              border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow: hidden;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { cursor: pointer; font-family: var(--sans); }
+input, textarea, select {
+  font-family: var(--sans);
+  font-size: 14px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color var(--transition);
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+}
+textarea { resize: vertical; min-height: 80px; }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════ */
+#app { display: flex; height: 100vh; }
+
+/* Sidebar */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width var(--transition);
+}
+#sidebar-header {
+  padding: 18px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#sidebar-logo {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+  user-select: none;
+}
+#sidebar-logo span { color: var(--text2); }
+#sidebar-search {
+  position: relative;
+}
+#sidebar-search input {
+  padding-left: 32px;
+  font-size: 13px;
+}
+#sidebar-search svg {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  pointer-events: none;
+}
+#sidebar-filters {
+  display: flex;
+  gap: 4px;
+  padding: 10px 16px 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.filter-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 500;
+  transition: all var(--transition);
+}
+.filter-btn:hover, .filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+#sidebar-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 16px 10px;
+  flex-shrink: 0;
+}
+.view-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  border-radius: var(--radius);
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-family: var(--mono);
+  transition: all var(--transition);
+}
+.view-btn.active {
+  background: var(--surface3);
+  border-color: var(--border2);
+  color: var(--text);
+}
+#project-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 10px;
+}
+#project-list::-webkit-scrollbar { width: 4px; }
+#project-list::-webkit-scrollbar-track { background: transparent; }
+#project-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR EDIT BUTTON
+═══════════════════════════════════════════════ */
+.proj-item {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid transparent;
+  margin-bottom: 3px;
+  transition: all var(--transition);
+  position: relative;
+}
+.proj-item:hover { background: var(--surface2); border-color: var(--border); }
+.proj-item.active { background: var(--surface3); border-color: var(--accent2); }
+.proj-item-edit {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius);
+  width: 24px;
+  height: 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: all var(--transition);
+  z-index: 2;
+}
+.proj-item:hover .proj-item-edit { display: flex; }
+.proj-item-edit:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.proj-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 28px;
+}
+.proj-item-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.proj-card-edit {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius);
+  padding: 3px 8px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.proj-card-edit:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.Active   { background: var(--green); }
+.status-dot.On-Hold  { background: var(--amber); }
+.status-dot.Complete { background: var(--text3); }
+
+/* Project Card View */
+.proj-card {
+  padding: 12px;
+  border-radius: var(--radius2);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  background: var(--surface2);
+  transition: all var(--transition);
+}
+.proj-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: var(--shadow); }
+.proj-card.active { border-color: var(--accent2); background: var(--surface3); }
+.proj-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.proj-card-desc {
+  font-size: 11px;
+  color: var(--text2);
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.proj-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+
+#sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#new-project-btn {
+  width: 100%;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background var(--transition);
+}
+#new-project-btn:hover { background: var(--accent2); }
+
+/* Main Panel */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+#topbar-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+#topbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn {
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all var(--transition);
+}
+.btn:hover { background: var(--surface3); border-color: var(--border2); }
+.btn-danger { border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: rgba(224,92,92,0.12); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+/* ── Status Dropdown Button ── */
+.status-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--sans);
+  color: #fff;
+  cursor: pointer;
+  transition: filter 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  min-width: 130px;
+  justify-content: space-between;
+}
+.status-dropdown-btn:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 3px 14px rgba(0,0,0,0.35);
+}
+.status-dropdown-btn.Active   { background: var(--accent); }
+.status-dropdown-btn.On-Hold  { background: var(--amber); }
+.status-dropdown-btn.Complete { background: var(--green); }
+
+.status-btn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.7);
+}
+
+/* Dropdown menu */
+.status-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow2);
+  overflow: hidden;
+  z-index: 500;
+  animation: ddIn 0.15s ease;
+}
+@keyframes ddIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+.status-dd-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: filter 0.15s ease;
+  text-align: left;
+}
+.status-dd-item:hover { filter: brightness(1.15); }
+.status-dd-item.active-item   { background: var(--accent); }
+.status-dd-item.hold-item     { background: var(--amber); }
+.status-dd-item.complete-item { background: var(--green); }
+.status-dd-item + .status-dd-item { border-top: 1px solid rgba(255,255,255,0.12); }
+.status-dd-item-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.7);
+  flex-shrink: 0;
+}
+
+#content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+#content::-webkit-scrollbar { width: 6px; }
+#content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════════════ */
+#empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text3);
+  gap: 12px;
+  text-align: center;
+}
+#empty-state svg { opacity: 0.3; }
+#empty-state h3 { font-size: 16px; font-weight: 500; color: var(--text2); }
+#empty-state p  { font-size: 13px; max-width: 300px; }
+
+/* ═══════════════════════════════════════════════
+   PROJECT DETAIL
+═══════════════════════════════════════════════ */
+#project-detail { display: none; }
+#project-detail.visible { display: block; }
+
+.detail-header {
+  margin-bottom: 20px;
+}
+.detail-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.detail-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+.detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.detail-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+}
+.detail-meta-item label { color: var(--text3); }
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 500;
+}
+.status-badge.Active   { background: rgba(62,207,142,0.12); color: var(--green); }
+.status-badge.On-Hold  { background: rgba(245,166,35,0.12); color: var(--amber); }
+.status-badge.Complete { background: rgba(127,134,168,0.12); color: var(--text2); }
+
+.detail-description {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.7;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--border2);
+  margin-top: 10px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  position: relative;
+  transition: color var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); }
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+.tab-count {
+  background: var(--surface3);
+  color: var(--text2);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ═══════════════════════════════════════════════
+   CHILD TABLES
+═══════════════════════════════════════════════ */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th {
+  background: var(--surface2);
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  user-select: none;
+}
+.data-table th .sort-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  padding: 0 0 0 5px;
+  font-size: 10px;
+  transition: color var(--transition);
+  vertical-align: middle;
+}
+.data-table th .sort-btn:hover { color: var(--accent); }
+.data-table th .sort-btn.asc::after  { content: '▲'; }
+.data-table th .sort-btn.desc::after { content: '▼'; }
+.data-table th .sort-btn:not(.asc):not(.desc)::after { content: '⇅'; }
+
+.data-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--surface2); }
+.data-table tbody tr { transition: background var(--transition); }
+
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+  overflow: hidden;
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+.table-empty {
+  padding: 28px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+.action-cell { white-space: nowrap; }
+.action-cell button {
+  background: none;
+  border: none;
+  color: var(--text3);
+  padding: 3px 6px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  transition: all var(--transition);
+}
+.action-cell button:hover { background: var(--surface3); color: var(--text); }
+.action-cell button.del:hover { color: var(--red); }
+
+/* Mono ID cells */
+.id-cell {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+.date-cell {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════ */
+#modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow2);
+  animation: modalIn 0.18s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.modal-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title { font-size: 15px; font-weight: 600; }
+.modal-close {
+  background: none; border: none;
+  color: var(--text3); font-size: 18px;
+  width: 28px; height: 28px;
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.modal-close:hover { background: var(--surface3); color: var(--text); }
+.modal-body { padding: 20px; }
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.form-row { margin-bottom: 14px; }
+.form-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+.form-row select { cursor: pointer; }
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+#toast-container {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  animation: toastIn 0.2s ease;
+  max-width: 300px;
+}
+.toast.success { border-color: var(--green); color: var(--green); }
+.toast.error   { border-color: var(--red);   color: var(--red); }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ═══════════════════════════════════════════════
+   LOADING
+═══════════════════════════════════════════════ */
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.3s ease;
+  z-index: 9999;
+}
+
+/* ═══════════════════════════════════════════════
+   INLINE EDIT
+═══════════════════════════════════════════════ */
+.inline-edit-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.inline-edit-wrap input {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.inline-save-btn {
+  background: var(--green);
+  border: none;
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 4px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.inline-cancel-btn {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius);
+  padding: 4px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════ */
+#footer {
+  padding: 8px 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+#footer-version {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+
+/* ═══════════════════════════════════════════════
+   SCROLLBAR GLOBAL
+═══════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════
+   THEME TOGGLE SWITCH
+═══════════════════════════════════════════════ */
+#theme-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: 8px;
+}
+.theme-icon {
+  font-size: 14px;
+  line-height: 1;
+  user-select: none;
+  transition: opacity 0.2s ease;
+}
+#theme-icon-moon { opacity: 1; }
+#theme-icon-sun  { opacity: 0.35; }
+[data-theme="light"] #theme-icon-moon { opacity: 0.35; }
+[data-theme="light"] #theme-icon-sun  { opacity: 1; }
+
+.toggle-switch {
+  position: relative;
+  width: 38px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--text2);
+  border-radius: 50%;
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+.toggle-switch input:checked + .toggle-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.toggle-switch input:checked + .toggle-track::after {
+  transform: translateX(18px);
+  background: #fff;
+}
+</style>
+</head>
+<body>
+
+<!-- Loading Bar -->
+<div id="loading-bar"></div>
+
+<!-- App Layout -->
+<div id="app">
+
+  <!-- ── SIDEBAR ──────────────────────────── -->
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <div id="sidebar-logo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="1" y="1" width="6" height="6" rx="1"/>
+          <rect x="9" y="1" width="6" height="6" rx="1"/>
+          <rect x="1" y="9" width="6" height="6" rx="1"/>
+          <rect x="9" y="9" width="6" height="6" rx="1" opacity="0.4"/>
+        </svg>
+        ProjectDesk <span>v11</span>
+      </div>
+      <div id="sidebar-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="Search projects…" />
+      </div>
+    </div>
+
+    <div id="sidebar-filters">
+      <button class="filter-btn active" data-filter="All">All</button>
+      <button class="filter-btn" data-filter="Active">Active</button>
+      <button class="filter-btn" data-filter="On Hold">On Hold</button>
+      <button class="filter-btn" data-filter="Complete">Complete</button>
+    </div>
+
+    <div id="sidebar-view-toggle">
+      <button class="view-btn active" id="view-list-btn" onclick="setView('list')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        List
+      </button>
+      <button class="view-btn" id="view-card-btn" onclick="setView('card')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Cards
+      </button>
+    </div>
+
+    <div id="project-list"></div>
+
+    <div id="sidebar-footer">
+      <button id="new-project-btn" onclick="openNewProjectModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Project
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ─────────────────────────────── -->
+  <main id="main">
+    <div id="topbar">
+      <div id="topbar-title">Select a project</div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div id="topbar-actions" id="topbar-actions-wrap" style="display:none;">
+          <button class="btn" onclick="openEditProjectModal()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit
+          </button>
+          <button class="btn btn-danger" onclick="confirmDeleteProject()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            Delete
+          </button>
+        </div>
+        <div id="theme-toggle-wrap">
+          <span class="theme-icon" id="theme-icon-moon">🌙</span>
+          <label class="toggle-switch" title="Toggle light/dark theme">
+            <input type="checkbox" id="theme-toggle" onchange="toggleTheme(this.checked)" />
+            <span class="toggle-track"></span>
+          </label>
+          <span class="theme-icon" id="theme-icon-sun">☀️</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="content">
+      <!-- Empty State -->
+      <div id="empty-state">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+          <rect x="8" y="8" width="22" height="22" rx="3" stroke="currentColor" stroke-width="2"/>
+          <rect x="34" y="8" width="22" height="22" rx="3" stroke="currentColor" stroke-width="2"/>
+          <rect x="8" y="34" width="22" height="22" rx="3" stroke="currentColor" stroke-width="2"/>
+          <rect x="34" y="34" width="22" height="22" rx="3" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"/>
+        </svg>
+        <h3>No project selected</h3>
+        <p>Choose a project from the sidebar or create a new one to get started.</p>
+      </div>
+
+      <!-- Project Detail -->
+      <div id="project-detail">
+
+        <!-- Header -->
+        <div class="detail-header">
+          <div class="detail-header-top">
+            <div id="detail-title" class="detail-title">—</div>
+            <div id="detail-status-wrap"></div>
+          </div>
+          <div class="detail-meta">
+            <div class="detail-meta-item">
+              <label>ID</label>
+              <span id="detail-id" class="id-cell">—</span>
+            </div>
+            <div class="detail-meta-item">
+              <label>Created</label>
+              <span id="detail-created">—</span>
+            </div>
+            <div class="detail-meta-item">
+              <label>Modified</label>
+              <span id="detail-modified">—</span>
+            </div>
+          </div>
+          <div id="detail-description" class="detail-description" style="display:none;"></div>
+        </div>
+
+        <!-- Status Changer -->
+        <div style="margin-bottom:20px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-right:4px;">Set Status:</span>
+          <div id="status-dropdown-wrap" style="position:relative;">
+            <button id="status-dropdown-btn" class="status-dropdown-btn" onclick="toggleStatusDropdown(event)">
+              <span class="status-btn-dot" id="status-dd-dot"></span>
+              <span id="status-dd-label">Active</span>
+              <svg id="status-dd-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:4px;transition:transform 0.2s ease;">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <div id="status-dropdown-menu" class="status-dropdown-menu" style="display:none;">
+              <button class="status-dd-item active-item"   onclick="changeStatus('Active')">  <span class="status-dd-item-dot"></span>Active</button>
+              <button class="status-dd-item hold-item"     onclick="changeStatus('On Hold')"> <span class="status-dd-item-dot"></span>On Hold</button>
+              <button class="status-dd-item complete-item" onclick="changeStatus('Complete')"><span class="status-dd-item-dot"></span>Complete</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="notes" onclick="switchTab('notes')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+            Notes
+            <span class="tab-count" id="notes-count">0</span>
+          </button>
+          <button class="tab-btn" data-tab="links" onclick="switchTab('links')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            Links
+            <span class="tab-count" id="links-count">0</span>
+          </button>
+          <button class="tab-btn" data-tab="attachments" onclick="switchTab('attachments')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </svg>
+            Attachments
+            <span class="tab-count" id="att-count">0</span>
+          </button>
+        </div>
+
+        <!-- Tab: Notes -->
+        <div class="tab-panel active" id="tab-notes">
+          <div class="section-header">
+            <span class="section-title">Notes</span>
+            <button class="btn btn-primary" onclick="openAddNoteModal()">+ Add Note</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="notes-table">
+              <thead>
+                <tr>
+                  <th>Note <button class="sort-btn" onclick="sortTable('notes-table',1,this)"></button></th>
+                  <th>Created <button class="sort-btn" onclick="sortTable('notes-table',2,this)"></button></th>
+                  <th>Modified <button class="sort-btn" onclick="sortTable('notes-table',3,this)"></button></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="notes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Links -->
+        <div class="tab-panel" id="tab-links">
+          <div class="section-header">
+            <span class="section-title">Links</span>
+            <button class="btn btn-primary" onclick="openAddLinkModal()">+ Add Link</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="links-table">
+              <thead>
+                <tr>
+                  <th>Label <button class="sort-btn" onclick="sortTable('links-table',1,this)"></button></th>
+                  <th>URL <button class="sort-btn" onclick="sortTable('links-table',2,this)"></button></th>
+                  <th>Created <button class="sort-btn" onclick="sortTable('links-table',3,this)"></button></th>
+                  <th>Modified <button class="sort-btn" onclick="sortTable('links-table',4,this)"></button></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="links-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Attachments -->
+        <div class="tab-panel" id="tab-attachments">
+          <div class="section-header">
+            <span class="section-title">Attachments</span>
+            <button class="btn btn-primary" onclick="openAddAttachmentModal()">+ Add Attachment</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="att-table">
+              <thead>
+                <tr>
+                  <th>File Name <button class="sort-btn" onclick="sortTable('att-table',1,this)"></button></th>
+                  <th>File URL <button class="sort-btn" onclick="sortTable('att-table',2,this)"></button></th>
+                  <th>Created <button class="sort-btn" onclick="sortTable('att-table',3,this)"></button></th>
+                  <th>Modified <button class="sort-btn" onclick="sortTable('att-table',4,this)"></button></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="att-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /project-detail -->
+    </div><!-- /content -->
+
+    <div id="footer">
+      <span id="footer-version" style="font-family:var(--mono);font-size:10px;color:var(--text3);">ProjectDesk v11.0 · Google Sheets Backend</span>
+      <span id="footer-status" style="font-family:var(--mono);font-size:10px;color:var(--text3);"></span>
+    </div>
+  </main>
+
+</div>
+
+<!-- ── MODAL OVERLAY ──────────────────────── -->
+<div id="modal-overlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Modal</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG — Replace with your deployed Apps Script Web App URL
+// ═══════════════════════════════════════════════════════════
+var SCRIPT_URL = '/.netlify/functions/proxy';
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+var state = {
+  projects: [],
+  currentProjectId: null,
+  currentProjectData: null,
+  filter: 'All',
+  search: '',
+  view: 'list',
+  sortStates: {},
+  networkErrorShown: false,
+  notesMap: {},
+  linksMap: {},
+  attachmentsMap: {}
+};
+
+// ═══════════════════════════════════════════════════════════
+// DATE HELPERS — Format in local timezone from ISO string
+// ═══════════════════════════════════════════════════════════
+function formatDate(iso) {
+  if (!iso) return '—';
+  try {
+    // Extract date/time parts directly from ISO string
+    var parts = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+    if (!parts) return iso;
+
+    // Build a UTC date, then convert to local
+    var utcDate = new Date(Date.UTC(
+      parseInt(parts[1]),
+      parseInt(parts[2]) - 1,
+      parseInt(parts[3]),
+      parseInt(parts[4]),
+      parseInt(parts[5]),
+      parseInt(parts[6])
+    ));
+
+    var opts = { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return utcDate.toLocaleString(undefined, opts);
+  } catch(e) {
+    return iso;
+  }
+}
+
+function formatDateShort(iso) {
+  if (!iso) return '—';
+  try {
+    var parts = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+    if (!parts) return iso;
+    var utcDate = new Date(Date.UTC(
+      parseInt(parts[1]),
+      parseInt(parts[2]) - 1,
+      parseInt(parts[3]),
+      parseInt(parts[4]),
+      parseInt(parts[5]),
+      parseInt(parts[6])
+    ));
+    var opts = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return utcDate.toLocaleString(undefined, opts);
+  } catch(e) {
+    return iso;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// API CALLS — All via GET with ?action=X&data=JSON
+// ═══════════════════════════════════════════════════════════
+function apiCall(action, data) {
+  return new Promise(function(resolve, reject) {
+    var url = SCRIPT_URL + '?action=' + encodeURIComponent(action);
+    if (data) {
+      url += '&data=' + encodeURIComponent(JSON.stringify(data));
+    }
+    fetch(url)
+      .then(function(r) { return r.json(); })
+      .then(resolve)
+      .catch(reject);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOADING
+// ═══════════════════════════════════════════════════════════
+function setLoading(pct) {
+  var bar = document.getElementById('loading-bar');
+  bar.style.width = pct + '%';
+  if (pct >= 100) {
+    setTimeout(function() { bar.style.width = '0%'; }, 400);
+  }
+}
+
+function setFooterStatus(msg) {
+  document.getElementById('footer-status').textContent = msg;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function toast(msg, type) {
+  var c = document.getElementById('toast-container');
+  var t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(function() { t.remove(); }, 3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INITIAL LOAD
+// ═══════════════════════════════════════════════════════════
+function loadProjects() {
+  setLoading(30);
+  setFooterStatus('Loading…');
+  apiCall('getProjects')
+    .then(function(res) {
+      setLoading(100);
+      if (res.success) {
+        state.projects = res.data || [];
+        state.networkErrorShown = false;
+        renderSidebar();
+        setFooterStatus(state.projects.length + ' projects loaded');
+      } else {
+        toast('Error loading projects: ' + res.error, 'error');
+        setFooterStatus('Error loading projects');
+      }
+    })
+    .catch(function(err) {
+      setLoading(100);
+      if (!state.networkErrorShown) {
+        toast('Network error — check SCRIPT_URL', 'error');
+        state.networkErrorShown = true;
+      }
+      setFooterStatus('Connection failed');
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIDEBAR RENDERING
+// ═══════════════════════════════════════════════════════════
+function getFilteredProjects() {
+  return state.projects.filter(function(p) {
+    var matchFilter = state.filter === 'All' || p.Status === state.filter;
+    var matchSearch = !state.search || p.Title.toLowerCase().includes(state.search.toLowerCase());
+    return matchFilter && matchSearch;
+  });
+}
+
+function renderSidebar() {
+  var list = document.getElementById('project-list');
+  var projects = getFilteredProjects();
+  list.innerHTML = '';
+
+  if (projects.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text3);">No projects found</div>';
+    return;
+  }
+
+  if (state.view === 'list') {
+    projects.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'proj-item' + (p.ProjectID === state.currentProjectId ? ' active' : '');
+      el.setAttribute('data-id', p.ProjectID);
+      var dotClass = p.Status ? p.Status.replace(' ', '-') : 'Active';
+      el.innerHTML =
+        '<div class="proj-item-title">' + escHtml(p.Title || 'Untitled') + '</div>' +
+        '<div class="proj-item-meta">' +
+          '<span class="status-dot ' + dotClass + '"></span>' +
+          '<span>' + escHtml(p.Status || '') + '</span>' +
+          '<span>·</span>' +
+          '<span>' + formatDateShort(p.DateModified) + '</span>' +
+        '</div>' +
+        '<button class="proj-item-edit" title="Edit project" onclick="quickEditProject(event, \'' + escAttr(p.ProjectID) + '\')">✎</button>';
+      el.addEventListener('click', function() { selectProject(p.ProjectID); });
+      list.appendChild(el);
+    });
+  } else {
+    // Card view
+    projects.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'proj-card' + (p.ProjectID === state.currentProjectId ? ' active' : '');
+      el.setAttribute('data-id', p.ProjectID);
+      var dotClass = p.Status ? p.Status.replace(' ', '-') : 'Active';
+      el.innerHTML =
+        '<div class="proj-card-title">' + escHtml(p.Title || 'Untitled') + '</div>' +
+        '<div class="proj-card-desc">' + escHtml(p.Description || 'No description') + '</div>' +
+        '<div class="proj-card-footer">' +
+          '<span class="status-badge ' + dotClass + '">' +
+            '<span class="status-dot ' + dotClass + '"></span>' +
+            escHtml(p.Status || 'Active') +
+          '</span>' +
+          '<button class="proj-card-edit" title="Edit project" onclick="quickEditProject(event, \'' + escAttr(p.ProjectID) + '\')">✎ Edit</button>' +
+        '</div>';
+      el.addEventListener('click', function() { selectProject(p.ProjectID); });
+      list.appendChild(el);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIEW TOGGLE
+// ═══════════════════════════════════════════════════════════
+function setView(v) {
+  state.view = v;
+  document.getElementById('view-list-btn').className = 'view-btn' + (v === 'list' ? ' active' : '');
+  document.getElementById('view-card-btn').className = 'view-btn' + (v === 'card' ? ' active' : '');
+  renderSidebar();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SELECT PROJECT
+// ═══════════════════════════════════════════════════════════
+function selectProject(projectId) {
+  state.currentProjectId = projectId;
+  renderSidebar();
+  setLoading(40);
+  apiCall('getProject', { projectId: projectId })
+    .then(function(res) {
+      setLoading(100);
+      if (res.success) {
+        state.currentProjectData = res.data;
+        renderProjectDetail(res.data);
+        document.getElementById('topbar-actions-wrap').style.display = 'flex';
+      } else {
+        toast('Could not load project: ' + res.error, 'error');
+      }
+    })
+    .catch(function() {
+      setLoading(100);
+      if (!state.networkErrorShown) {
+        toast('Network error — check SCRIPT_URL', 'error');
+        state.networkErrorShown = true;
+      }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATUS DROPDOWN
+// ═══════════════════════════════════════════════════════════
+function highlightStatusButtons(currentStatus) {
+  var btn = document.getElementById('status-dropdown-btn');
+  var label = document.getElementById('status-dd-label');
+  if (!btn || !label) return;
+
+  // Remove all status classes and apply current
+  btn.classList.remove('Active', 'On-Hold', 'Complete');
+  var cls = currentStatus ? currentStatus.replace(' ', '-') : 'Active';
+  btn.classList.add(cls);
+  label.textContent = currentStatus || 'Active';
+
+  // Hide the current status from the dropdown menu items
+  document.querySelectorAll('.status-dd-item').forEach(function(item) {
+    var itemStatus = item.textContent.trim();
+    item.style.display = (itemStatus === currentStatus) ? 'none' : 'flex';
+  });
+}
+
+function toggleStatusDropdown(e) {
+  e.stopPropagation();
+  var menu = document.getElementById('status-dropdown-menu');
+  var chevron = document.getElementById('status-dd-chevron');
+  var isOpen = menu.style.display !== 'none';
+  menu.style.display = isOpen ? 'none' : 'block';
+  chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function closeStatusDropdown() {
+  var menu = document.getElementById('status-dropdown-menu');
+  var chevron = document.getElementById('status-dd-chevron');
+  if (menu) menu.style.display = 'none';
+  if (chevron) chevron.style.transform = '';
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function() {
+  closeStatusDropdown();
+});
+
+// ═══════════════════════════════════════════════════════════
+// RENDER PROJECT DETAIL
+// ═══════════════════════════════════════════════════════════
+function renderProjectDetail(data) {
+  var p = data.project;
+  document.getElementById('empty-state').style.display = 'none';
+  var detail = document.getElementById('project-detail');
+  detail.classList.add('visible');
+
+  document.getElementById('topbar-title').textContent = p.Title || 'Untitled';
+  document.getElementById('detail-title').textContent = p.Title || 'Untitled';
+  document.getElementById('detail-id').textContent = p.ProjectID;
+  document.getElementById('detail-created').textContent = formatDate(p.DateCreated);
+  document.getElementById('detail-modified').textContent = formatDate(p.DateModified);
+
+  var statusClass = (p.Status || 'Active').replace(' ', '-');
+  document.getElementById('detail-status-wrap').innerHTML =
+    '<span class="status-badge ' + statusClass + '">' +
+      '<span class="status-dot ' + statusClass + '"></span>' +
+      escHtml(p.Status || 'Active') +
+    '</span>';
+
+  var descEl = document.getElementById('detail-description');
+  if (p.Description) {
+    descEl.textContent = p.Description;
+    descEl.style.display = '';
+  } else {
+    descEl.style.display = 'none';
+  }
+
+  // Render children
+  renderNotesTable(data.notes || []);
+  renderLinksTable(data.links || []);
+  renderAttachmentsTable(data.attachments || []);
+
+  // Update tab counts
+  document.getElementById('notes-count').textContent = (data.notes || []).length;
+  document.getElementById('links-count').textContent = (data.links || []).length;
+  document.getElementById('att-count').textContent = (data.attachments || []).length;
+
+  // Highlight current status button
+  highlightStatusButtons(p.Status || 'Active');
+}
+
+// ─── Notes Table ──────────────────────────
+function renderNotesTable(notes) {
+  state.notesMap = {};
+  notes.forEach(function(n) { state.notesMap[n.NoteID] = n; });
+  var tbody = document.getElementById('notes-tbody');
+  if (notes.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="table-empty">No notes yet — add one above.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = notes.map(function(n) {
+    return '<tr>' +
+      '<td style="white-space:pre-wrap;">' + escHtml(n.NoteText || '') + '</td>' +
+      '<td class="date-cell">' + formatDateShort(n.DateCreated) + '</td>' +
+      '<td class="date-cell">' + formatDateShort(n.DateModified) + '</td>' +
+      '<td class="action-cell">' +
+        '<button title="Edit" data-id="' + escHtml(n.NoteID) + '" onclick="openEditNoteById(this.getAttribute("data-id"))">&#9998;</button>' +
+        '<button title="Delete" class="del" data-id="' + escHtml(n.NoteID) + '" onclick="deleteNote(this.getAttribute("data-id"))">&#10005;</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ─── Links Table ──────────────────────────
+function renderLinksTable(links) {
+  state.linksMap = {};
+  links.forEach(function(l) { state.linksMap[l.LinkID] = l; });
+  var tbody = document.getElementById('links-tbody');
+  if (links.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="table-empty">No links yet — add one above.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = links.map(function(l) {
+    return '<tr>' +
+      '<td>' + escHtml(l.Label || '') + '</td>' +
+      '<td><a href="' + escHtml(l.URL) + '" target="_blank" rel="noopener">' + escHtml(l.URL || '') + '</a></td>' +
+      '<td class="date-cell">' + formatDateShort(l.DateCreated) + '</td>' +
+      '<td class="date-cell">' + formatDateShort(l.DateModified) + '</td>' +
+      '<td class="action-cell">' +
+        '<button title="Edit" data-id="' + escHtml(l.LinkID) + '" onclick="openEditLinkById(this.getAttribute("data-id"))">&#9998;</button>' +
+        '<button title="Delete" class="del" data-id="' + escHtml(l.LinkID) + '" onclick="deleteLink(this.getAttribute("data-id"))">&#10005;</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ─── Attachments Table ────────────────
+function renderAttachmentsTable(attachments) {
+  state.attachmentsMap = {};
+  attachments.forEach(function(a) { state.attachmentsMap[a.AttachmentID] = a; });
+  var tbody = document.getElementById('att-tbody');
+  if (attachments.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="table-empty">No attachments yet — add one above.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = attachments.map(function(a) {
+    return '<tr>' +
+      '<td>' + escHtml(a.FileName || '') + '</td>' +
+      '<td><a href="' + escHtml(a.FileURL) + '" target="_blank" rel="noopener">' + escHtml(a.FileURL || '') + '</a></td>' +
+      '<td class="date-cell">' + formatDateShort(a.DateCreated) + '</td>' +
+      '<td class="date-cell">' + formatDateShort(a.DateModified) + '</td>' +
+      '<td class="action-cell">' +
+        '<button title="Edit" data-id="' + escHtml(a.AttachmentID) + '" onclick="openEditAttachmentById(this.getAttribute("data-id"))">&#9998;</button>' +
+        '<button title="Delete" class="del" data-id="' + escHtml(a.AttachmentID) + '" onclick="deleteAttachment(this.getAttribute("data-id"))">&#10005;</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p) {
+    p.classList.toggle('active', p.id === 'tab-' + tab);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATUS CHANGE — Full reload
+// ═══════════════════════════════════════════════════════════
+function changeStatus(newStatus) {
+  closeStatusDropdown();
+  if (!state.currentProjectId) return;
+  apiCall('updateProject', { projectId: state.currentProjectId, status: newStatus })
+    .then(function(res) {
+      if (res.success) {
+        toast('Status updated to ' + newStatus, 'success');
+        // Full reload: refresh projects list AND re-fetch current project
+        apiCall('getProjects').then(function(r) {
+          if (r.success) {
+            state.projects = r.data || [];
+            renderSidebar();
+            selectProject(state.currentProjectId);
+          }
+        });
+      } else {
+        toast('Error: ' + res.error, 'error');
+      }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SORT TABLE
+// ═══════════════════════════════════════════════════════════
+function sortTable(tableId, colIndex, btn) {
+  var table = document.getElementById(tableId);
+  var tbody = table.querySelector('tbody');
+  var rows = Array.from(tbody.querySelectorAll('tr'));
+  if (rows.length === 0) return;
+
+  // Determine sort direction
+  var key = tableId + '_' + colIndex;
+  var dir = state.sortStates[key] === 'asc' ? 'desc' : 'asc';
+  state.sortStates[key] = dir;
+
+  // Reset all sort buttons in this table
+  table.querySelectorAll('.sort-btn').forEach(function(b) { b.className = 'sort-btn'; });
+  btn.className = 'sort-btn ' + dir;
+
+  rows.sort(function(a, b) {
+    var aVal = (a.cells[colIndex] ? a.cells[colIndex].textContent : '').trim().toLowerCase();
+    var bVal = (b.cells[colIndex] ? b.cells[colIndex].textContent : '').trim().toLowerCase();
+    if (aVal < bVal) return dir === 'asc' ? -1 : 1;
+    if (aVal > bVal) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  rows.forEach(function(r) { tbody.appendChild(r); });
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════════════
+function openModal(title, bodyHtml, footerHtml) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-footer').innerHTML = footerHtml;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+function closeModalOnOverlay(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ═══════════════════════════════════════════════════════════
+// QUICK EDIT FROM SIDEBAR
+// ═══════════════════════════════════════════════════════════
+function quickEditProject(event, projectId) {
+  event.stopPropagation(); // prevent selectProject from firing
+  setLoading(40);
+  apiCall('getProject', { projectId: projectId })
+    .then(function(res) {
+      setLoading(100);
+      if (res.success) {
+        // Temporarily store data so openEditProjectModal can use it
+        state.editTargetProject = res.data.project;
+        openQuickEditModal(res.data.project);
+      } else {
+        toast('Could not load project: ' + res.error, 'error');
+      }
+    })
+    .catch(function() {
+      setLoading(100);
+      if (!state.networkErrorShown) {
+        toast('Network error — check SCRIPT_URL', 'error');
+        state.networkErrorShown = true;
+      }
+    });
+}
+
+function openQuickEditModal(p) {
+  openModal('Edit Project',
+    '<div class="form-row"><label class="form-label">Title</label>' +
+    '<input type="text" id="f-title" value="' + escAttr(p.Title) + '" /></div>' +
+    '<div class="form-row"><label class="form-label">Status</label>' +
+    '<select id="f-status">' +
+      ['Active','On Hold','Complete'].map(function(s) {
+        return '<option' + (p.Status === s ? ' selected' : '') + '>' + s + '</option>';
+      }).join('') +
+    '</select></div>' +
+    '<div class="form-row"><label class="form-label">Description</label>' +
+    '<textarea id="f-desc">' + escHtml(p.Description || '') + '</textarea></div>',
+    '<button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitQuickEdit(\'' + escAttr(p.ProjectID) + '\')">Save Changes</button>'
+  );
+  setTimeout(function() { document.getElementById('f-title').focus(); }, 80);
+}
+
+function submitQuickEdit(projectId) {
+  var title  = document.getElementById('f-title').value.trim();
+  var status = document.getElementById('f-status').value;
+  var desc   = document.getElementById('f-desc').value.trim();
+  if (!title) { toast('Title is required', 'error'); return; }
+
+  apiCall('updateProject', { projectId: projectId, title: title, status: status, description: desc })
+    .then(function(res) {
+      if (res.success) {
+        closeModal();
+        toast('Project updated', 'success');
+        // If the edited project is currently open, reload it too
+        if (projectId === state.currentProjectId) {
+          loadAndSelectProject(projectId);
+        } else {
+          apiCall('getProjects').then(function(r) {
+            if (r.success) { state.projects = r.data || []; renderSidebar(); }
+          });
+        }
+      } else {
+        toast('Error: ' + res.error, 'error');
+      }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROJECT MODALS
+// ═══════════════════════════════════════════════════════════
+function openNewProjectModal() {
+  openModal('New Project',
+    '<div class="form-row"><label class="form-label">Title</label>' +
+    '<input type="text" id="f-title" placeholder="Project title" /></div>' +
+    '<div class="form-row"><label class="form-label">Status</label>' +
+    '<select id="f-status"><option>Active</option><option>On Hold</option><option>Complete</option></select></div>' +
+    '<div class="form-row"><label class="form-label">Description</label>' +
+    '<textarea id="f-desc" placeholder="Optional description…"></textarea></div>',
+    '<button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitNewProject()">Create Project</button>'
+  );
+  setTimeout(function() { document.getElementById('f-title').focus(); }, 80);
+}
+
+function submitNewProject() {
+  var title = document.getElementById('f-title').value.trim();
+  var status = document.getElementById('f-status').value;
+  var desc   = document.getElementById('f-desc').value.trim();
+  if (!title) { toast('Title is required', 'error'); return; }
+
+  setLoading(40);
+  apiCall('addProject', { title: title, status: status, description: desc })
+    .then(function(res) {
+      setLoading(100);
+      if (res.success) {
+        closeModal();
+        toast('Project created!', 'success');
+        loadAndSelectProject(res.data.projectId);
+      } else {
+        toast('Error: ' + res.error, 'error');
+      }
+    });
+}
+
+function loadAndSelectProject(id) {
+  apiCall('getProjects').then(function(r) {
+    if (r.success) {
+      state.projects = r.data || [];
+      state.currentProjectId = id;
+      renderSidebar();
+      selectProject(id);
+    }
+  });
+}
+
+function openEditProjectModal() {
+  if (!state.currentProjectData) return;
+  var p = state.currentProjectData.project;
+  openModal('Edit Project',
+    '<div class="form-row"><label class="form-label">Title</label>' +
+    '<input type="text" id="f-title" value="' + escAttr(p.Title) + '" /></div>' +
+    '<div class="form-row"><label class="form-label">Status</label>' +
+    '<select id="f-status">' +
+      ['Active','On Hold','Complete'].map(function(s) {
+        return '<option' + (p.Status === s ? ' selected' : '') + '>' + s + '</option>';
+      }).join('') +
+    '</select></div>' +
+    '<div class="form-row"><label class="form-label">Description</label>' +
+    '<textarea id="f-desc">' + escHtml(p.Description || '') + '</textarea></div>',
+    '<button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitEditProject()">Save Changes</button>'
+  );
+}
+
+function submitEditProject() {
+  var title = document.getElementById('f-title').value.trim();
+  var status = document.getElementById('f-status').value;
+  var desc   = document.getElementById('f-desc').value.trim();
+  if (!title) { toast('Title is required', 'error'); return; }
+
+  apiCall('updateProject', { projectId: state.currentProjectId, title: title, status: status, description: desc })
+    .then(function(res) {
+      if (res.success) {
+        closeModal();
+        toast('Project updated', 'success');
+        loadAndSelectProject(state.currentProjectId);
+      } else {
+        toast('Error: ' + res.error, 'error');
+      }
+    });
+}
+
+function confirmDeleteProject() {
+  if (!state.currentProjectId) return;
+  openModal('Delete Project',
+    '<p style="color:var(--text2);">Are you sure you want to delete this project? All notes, links, and attachments will also be deleted. This cannot be undone.</p>',
+    '<button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-danger" onclick="submitDeleteProject()">Delete Project</button>'
+  );
+}
+
+function submitDeleteProject() {
+  apiCall('deleteProject', { projectId: state.currentProjectId })
+    .then(function(res) {
+      if (res.success) {
+        closeModal();
+        toast('Project deleted', 'success');
+        state.currentProjectId = null;
+        state.currentProjectData = null;
+        document.getElementById('project-detail').classList.remove('visible');
+        document.getElementById('empty-state').style.display = '';
+        document.getElementById('topbar-title').textContent = 'Select a project';
+        document.getElementById('topbar-actions-wrap').style.display = 'none';
+        loadProjects();
+      } else {
+        toast('Error: ' + res.error, 'error');
+      }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// NOTE MODALS
+// ═══════════════════════════════════════════════════════════
+function openAddNoteModal() {
+  openModal('Add Note',
+    '<div class="form-row"><label class="form-label">Note Text</label>' +
+    '<textarea id="f-note" placeholder="Enter your note…" style="min-height:120px;"></textarea></div>',
+    '<button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitAddNote()">Add Note</button>'
+  );
+  setTimeout(function() { document.getElementById('f-note').focus(); }, 80);
+}
+
+function submitAddNote() {
+  var text = document.getElementById('f-note').value.trim();
+  if (!text) { toast('Note text is required', 'error'); return; }
+  apiCall('addNote', { projectId: state.currentProjectId, noteText: text })
+    .then(function(res) {
+      if (res.success) { closeModal(); toast('Note added', 'success'); selectProject(state.currentProjectId); }
+      else { toast('Error: ' + res.error, 'error'); }
+    });
+}
+
+function openEditNoteById(noteId) {
+  var n = state.notesMap && state.notesMap[noteId];
+  if (!n) return;
+  openEditNoteModal(n.NoteID, n.NoteText);
+}
+
+function openEditLinkById(linkId) {
+  var l = state.linksMap && state.linksMap[linkId];
+  if (!l) return;
+  openEditLinkModal(l.LinkID, l.Label, l.URL);
+}
+
+function openEditAttachmentById(attId) {
+  var a = state.attachmentsMap && state.attachmentsMap[attId];
+  if (!a) return;
+  openEditAttachmentModal(a.AttachmentID, a.FileName, a.FileURL);
+}
+
+function openEditNoteModal(noteId, noteText) {
+  openModal('Edit Note',
+    '<div class="form-row"><label class="form-label">Note Text</label>' +
+    '<textarea id="f-note" style="min-height:120px;">' + escHtml(noteText) + '</textarea></div>',
+    '<button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitEditNote(\'' + noteId + '\')">Save Note</button>'
+  );
+}
+
+function submitEditNote(noteId) {
+  var text = document.getElementById('f-note').value.trim();
+  if (!text) { toast('Note text is required', 'error'); return; }
+  apiCall('updateNote', { noteId: noteId, projectId: state.currentProjectId, noteText: text })
+    .then(function(res) {
+      if (res.success) { closeModal(); toast('Note updated', 'success'); selectProject(state.currentProjectId); }
+      else { toast('Error: ' + res.error, 'error'); }
+    });
+}
+
+function deleteNote(noteId) {
+  if (!confirm('Delete this note?')) return;
+  apiCall('deleteNote', { noteId: noteId })
+    .then(function(res) {
+      if (res.success) { toast('Note deleted', 'success'); selectProject(state.currentProjectId); }
+      else { toast('Error: ' + res.error, 'error'); }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// LINK MODALS
+// ═══════════════════════════════════════════════════════════
+function openAddLinkModal() {
+  openModal('Add Link',
+    '<div class="form-row"><label class="form-label">Label</label>' +
+    '<input type="text" id="f-label" placeholder="e.g. Project Website" /></div>' +
+    '<div class="form-row"><label class="form-label">URL</label>' +
+    '<input type="url" id="f-url" placeholder="https://…" /></div>',
+    '<button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitAddLink()">Add Link</button>'
+  );
+  setTimeout(function() { document.getElementById('f-label').focus(); }, 80);
+}
+
+function submitAddLink() {
+  var label = document.getElementById('f-label').value.trim();
+  var url   = document.getElementById('f-url').value.trim();
+  if (!label || !url) { toast('Label and URL are required', 'error'); return; }
+  apiCall('addLink', { projectId: state.currentProjectId, label: label, url: url })
+    .then(function(res) {
+      if (res.success) { closeModal(); toast('Link added', 'success'); selectProject(state.currentProjectId); }
+      else { toast('Error: ' + res.error, 'error'); }
+    });
+}
+
+function openEditLinkModal(linkId, label, url) {
+  openModal('Edit Link',
+    '<div class="form-row"><label class="form-label">Label</label>' +
+    '<input type="text" id="f-label" value="' + escAttr(label) + '" /></div>' +
+    '<div class="form-row"><label class="form-label">URL</label>' +
+    '<input type="url" id="f-url" value="' + escAttr(url) + '" /></div>',
+    '<button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitEditLink(\'' + linkId + '\')">Save Link</button>'
+  );
+}
+
+function submitEditLink(linkId) {
+  var label = document.getElementById('f-label').value.trim();
+  var url   = document.getElementById('f-url').value.trim();
+  if (!label || !url) { toast('Label and URL are required', 'error'); return; }
+  apiCall('updateLink', { linkId: linkId, projectId: state.currentProjectId, label: label, url: url })
+    .then(function(res) {
+      if (res.success) { closeModal(); toast('Link updated', 'success'); selectProject(state.currentProjectId); }
+      else { toast('Error: ' + res.error, 'error'); }
+    });
+}
+
+function deleteLink(linkId) {
+  if (!confirm('Delete this link?')) return;
+  apiCall('deleteLink', { linkId: linkId })
+    .then(function(res) {
+      if (res.success) { toast('Link deleted', 'success'); selectProject(state.currentProjectId); }
+      else { toast('Error: ' + res.error, 'error'); }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// ATTACHMENT MODALS
+// ═══════════════════════════════════════════════════════════
+function openAddAttachmentModal() {
+  openModal('Add Attachment',
+    '<div class="form-row"><label class="form-label">File Name</label>' +
+    '<input type="text" id="f-fname" placeholder="e.g. Project_Brief.pdf" /></div>' +
+    '<div class="form-row"><label class="form-label">File URL (Google Drive or other)</label>' +
+    '<input type="url" id="f-furl" placeholder="https://drive.google.com/…" /></div>',
+    '<button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitAddAttachment()">Add Attachment</button>'
+  );
+  setTimeout(function() { document.getElementById('f-fname').focus(); }, 80);
+}
+
+function submitAddAttachment() {
+  var fname = document.getElementById('f-fname').value.trim();
+  var furl  = document.getElementById('f-furl').value.trim();
+  if (!fname || !furl) { toast('File name and URL are required', 'error'); return; }
+  apiCall('addAttachment', { projectId: state.currentProjectId, fileName: fname, fileUrl: furl })
+    .then(function(res) {
+      if (res.success) { closeModal(); toast('Attachment added', 'success'); selectProject(state.currentProjectId); }
+      else { toast('Error: ' + res.error, 'error'); }
+    });
+}
+
+function openEditAttachmentModal(attId, fname, furl) {
+  openModal('Edit Attachment',
+    '<div class="form-row"><label class="form-label">File Name</label>' +
+    '<input type="text" id="f-fname" value="' + escAttr(fname) + '" /></div>' +
+    '<div class="form-row"><label class="form-label">File URL</label>' +
+    '<input type="url" id="f-furl" value="' + escAttr(furl) + '" /></div>',
+    '<button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitEditAttachment(\'' + attId + '\')">Save Attachment</button>'
+  );
+}
+
+function submitEditAttachment(attId) {
+  var fname = document.getElementById('f-fname').value.trim();
+  var furl  = document.getElementById('f-furl').value.trim();
+  if (!fname || !furl) { toast('File name and URL are required', 'error'); return; }
+  apiCall('updateAttachment', { attachmentId: attId, projectId: state.currentProjectId, fileName: fname, fileUrl: furl })
+    .then(function(res) {
+      if (res.success) { closeModal(); toast('Attachment updated', 'success'); selectProject(state.currentProjectId); }
+      else { toast('Error: ' + res.error, 'error'); }
+    });
+}
+
+function deleteAttachment(attId) {
+  if (!confirm('Delete this attachment?')) return;
+  apiCall('deleteAttachment', { attachmentId: attId })
+    .then(function(res) {
+      if (res.success) { toast('Attachment deleted', 'success'); selectProject(state.currentProjectId); }
+      else { toast('Error: ' + res.error, 'error'); }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// ESCAPE HELPERS
+// ═══════════════════════════════════════════════════════════
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function escAttr(str) {
+  return String(str || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;')
+    .replace(/\n/g, ' ')
+    .replace(/\r/g, '');
+}
+
+// ═══════════════════════════════════════════════════════════
+// EVENT LISTENERS
+// ═══════════════════════════════════════════════════════════
+document.getElementById('search-input').addEventListener('input', function() {
+  state.search = this.value;
+  renderSidebar();
+});
+
+document.querySelectorAll('.filter-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    state.filter = btn.getAttribute('data-filter');
+    renderSidebar();
+  });
+});
+
+// Keyboard: ESC closes modal
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ═══════════════════════════════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════════════════════════════
+function toggleTheme(isLight) {
+  var theme = isLight ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', isLight ? 'light' : '');
+  localStorage.setItem('pd-theme', theme);
+}
+
+function applyStoredTheme() {
+  var saved = localStorage.getItem('pd-theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    var toggle = document.getElementById('theme-toggle');
+    if (toggle) toggle.checked = true;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', function() {
+  applyStoredTheme();
+  if (SCRIPT_URL === 'Replace YOUR_GOOGLE_SHEET_URL_HERE') {
+    toast('⚠ Set your SCRIPT_URL in the config section', 'error');
+    document.getElementById('footer-status').textContent = 'SCRIPT_URL not configured';
+  } else {
+    loadProjects();
+  }
+});
+</script>
+</body>
+</html>
