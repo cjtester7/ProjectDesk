@@ -1214,7 +1214,8 @@ textarea { resize: vertical; min-height: 80px; }
 // ═══════════════════════════════════════════════════════════
 // CONFIG — Replace with your deployed Apps Script Web App URL
 // ═══════════════════════════════════════════════════════════
-var SCRIPT_URL = 'https://script.google.com/macros/library/d/1cJcXBpbSEaOLqmNUjquYIICq_wM0D5theUJ3zBjUgP7LTSyy-qOxfcO7/3';
+var SCRIPT_URL = 'https://script.google.com/macros/library/d/1cJcXBpbSEaOLqmNUjquYIICq_wM0D5theUJ3zBjUgP7LTSyy-qOxfcO7/3
+';
 
 // ═══════════════════════════════════════════════════════════
 // STATE
@@ -2089,7 +2090,7 @@ function applyStoredTheme() {
 // ═══════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', function() {
   applyStoredTheme();
-  if (SCRIPT_URL === '1BCW-1Fa8jqigO0KdqhLgg9l1Q5O8NR02CxOcgJ19hb8') {
+  if (SCRIPT_URL === 'Replace YOUR_GOOGLE_SHEET_URL_HERE') {
     toast('⚠ Set your SCRIPT_URL in the config section', 'error');
     document.getElementById('footer-status').textContent = 'SCRIPT_URL not configured';
   } else {
