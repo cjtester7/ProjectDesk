@@ -1,7 +1,0 @@
-[functions]
-  directory = "netlify/functions"
-
-[[redirects]]
-  from = "/"
-  to = "/index-v11.html"
-  status = 200
